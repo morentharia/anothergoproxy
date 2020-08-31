@@ -105,7 +105,7 @@ func (c *CacheHandlers) requestHandler(req *http.Request, ctx *goproxy.ProxyCtx)
 
 	f := NewCacheFile(reqDTO)
 	if resp, err := f.Load(); err == nil {
-		logrus.Printf("[%d] --> %s %s body: %s", ctx.Session, req.Method, urlColor(req.URL), f.RequestBodyFilename)
+		logrus.Printf("[%d] --> %s %s body: %s", ctx.Session, req.Method, urlColor(req.URL), f.ResponseBodyFilename)
 		return req, resp.HttpResponse()
 	}
 
@@ -116,6 +116,14 @@ func (c *CacheHandlers) requestHandler(req *http.Request, ctx *goproxy.ProxyCtx)
 
 func (c *CacheHandlers) responseHandler(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 	logrus.Printf("[%d] <-- %d %s", ctx.Session, resp.StatusCode, urlColor(ctx.Req.URL))
+	//TODO: websocket support s!!
+	if resp.StatusCode == 101 {
+		return resp
+	}
+	//TODO:
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		return resp
+	}
 	location := resp.Header.Get("Location")
 	if location != "" {
 		logrus.Printf("Location: %s", location)

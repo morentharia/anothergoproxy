@@ -48,13 +48,12 @@ func init() {
 			Usage:       "upstream HTTP Proxy URL (example: http://127.0.0.1:8080)",
 			Destination: &options.UpstreamProxyURL,
 		},
-		&cli.StringFlag{
-			Name:        "chromedp",
-			Value:       "",
-			Usage:       "chrome controlURL (example: ws://127.0.0.1:9222/devtools/browser/44a6d3d2-3ce3-47b3-872e-80222e729419)",
-			Destination: &options.ControlURL,
-		},
-		//TODO: don't work now fix it
+		// &cli.StringFlag{
+		// 	Name:        "chromedp",
+		// 	Value:       "",
+		// 	Usage:       "chrome controlURL (example: ws://127.0.0.1:9222/devtools/browser/44a6d3d2-3ce3-47b3-872e-80222e729419)",
+		// 	Destination: &options.ControlURL,
+		// },
 		&cli.StringFlag{
 			Name:        "urlmatch",
 			Value:       "^.*$",
@@ -88,7 +87,7 @@ func main() {
 
 			logrus.Printf("Config: %s", pp.Sprint(options))
 
-			// DEBUG
+			// DEBUG TODO:
 			if false {
 				if browser, err = NewBrowser(); err != nil {
 					return err

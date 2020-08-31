@@ -1,3 +1,0 @@
-[submodule "pkg/os/fixtures/git-submodule"]
-	path = pkg/os/fixtures/git-submodule
-	url = https://github.com/ysmood/git-submodule.git
