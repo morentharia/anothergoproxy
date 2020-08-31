@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 type ResponseDTO struct {
@@ -24,7 +26,11 @@ func NewResponseDTO(r *http.Response) (*ResponseDTO, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.Body.Close()
+	err = r.Body.Close()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	return &ResponseDTO{
 		Response: r,

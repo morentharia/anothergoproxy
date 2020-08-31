@@ -4,83 +4,95 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
 
-type CacheFile struct {
-	Request              *RequestDTO
-	Response             *ResponseDTO
-	RequestInfoFilename  string
-	RequestBodyFilename  string
-	ResponseInfoFilename string
-	ResponseBodyFilename string
+type CacheFile struct{}
+
+var _ ReqRespCacheI = &CacheFile{}
+
+func NewCacheFile() (*CacheFile, error) {
+	var err error
+	for _, pathName := range []string{options.OutputPath, options.CachePath(), options.PagePath()} {
+		if _, err = os.Stat(pathName); os.IsNotExist(err) {
+			err = os.Mkdir(pathName, 0700)
+			if err != nil {
+				// logrus.WithError(err).Errorf("mkdir(\"%s\")", pathName)
+				return nil, errors.Wrapf(err, "mkdir(\"%s\")", pathName)
+			}
+		}
+	}
+
+	return &CacheFile{}, nil
 }
 
-func NewCacheFile(req *RequestDTO) *CacheFile {
+func (c *CacheFile) Load(req *RequestDTO) (*ResponseDTO, error) {
 	hash := req.Hash()
-	dataPath := filepath.Join(options.OutputPath, "data")
-	return &CacheFile{
-		Request:              req,
-		RequestInfoFilename:  filepath.Join(dataPath, fmt.Sprintf("%s_req.json", hash)),
-		RequestBodyFilename:  filepath.Join(dataPath, fmt.Sprintf("%s_req_body", hash)),
-		ResponseInfoFilename: filepath.Join(dataPath, fmt.Sprintf("%s_resp.json", hash)),
-		ResponseBodyFilename: filepath.Join(dataPath, fmt.Sprintf("%s_resp_body", hash)),
-	}
-}
+	ResponseInfoFilename := filepath.Join(options.CachePath(), fmt.Sprintf("%s_resp.json", hash))
+	ResponseBodyFilename := filepath.Join(options.CachePath(), fmt.Sprintf("%s_resp_body", hash))
 
-func (c *CacheFile) Save(resp *ResponseDTO) error {
-	b, err := json.MarshalIndent(c.Request, "", "  ")
+	data, err := ioutil.ReadFile(ResponseInfoFilename)
 	if err != nil {
-		return err
-	}
-
-	err = ioutil.WriteFile(c.RequestInfoFilename, b, 0644)
-	if err != nil {
-		return err
-	}
-
-	err = ioutil.WriteFile(c.RequestBodyFilename, c.Request.body, 0644)
-	if err != nil {
-		return err
-	}
-
-	b, err = json.MarshalIndent(resp, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	err = ioutil.WriteFile(c.ResponseInfoFilename, b, 0644)
-	if err != nil {
-		return err
-	}
-
-	err = ioutil.WriteFile(c.ResponseBodyFilename, resp.body, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *CacheFile) Load() (*ResponseDTO, error) {
-	data, err := ioutil.ReadFile(c.ResponseInfoFilename)
-	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	r, err := NewResponseDTO(nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	err = json.Unmarshal(data, r)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	r.body, err = ioutil.ReadFile(c.ResponseBodyFilename)
+	r.body, err = ioutil.ReadFile(ResponseBodyFilename)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
+	// logrus.Info("dlkjfdlkfj")
 
 	return r, nil
+}
+
+func (c *CacheFile) Store(req *RequestDTO, resp *ResponseDTO) error {
+	hash := req.Hash()
+	RequestInfoFilename := filepath.Join(options.CachePath(), fmt.Sprintf("%s_req.json", hash))
+	RequestBodyFilename := filepath.Join(options.CachePath(), fmt.Sprintf("%s_req_body", hash))
+	ResponseInfoFilename := filepath.Join(options.CachePath(), fmt.Sprintf("%s_resp.json", hash))
+	ResponseBodyFilename := filepath.Join(options.CachePath(), fmt.Sprintf("%s_resp_body", hash))
+
+	b, err := json.MarshalIndent(req, "", "  ")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = ioutil.WriteFile(RequestInfoFilename, b, 0644)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = ioutil.WriteFile(RequestBodyFilename, req.body, 0644)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	b, err = json.MarshalIndent(resp, "", "  ")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = ioutil.WriteFile(ResponseInfoFilename, b, 0644)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = ioutil.WriteFile(ResponseBodyFilename, resp.body, 0644)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
 }

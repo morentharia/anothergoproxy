@@ -16,6 +16,12 @@ github.com/elazarl/goproxy
 # github.com/fatih/color v1.9.0
 ## explicit
 github.com/fatih/color
+# github.com/gin-contrib/cors v1.3.1
+## explicit
+github.com/gin-contrib/cors
+# github.com/gin-contrib/pprof v1.3.0
+## explicit
+github.com/gin-contrib/pprof
 # github.com/gin-contrib/sse v0.1.0
 github.com/gin-contrib/sse
 # github.com/gin-gonic/gin v1.6.3
@@ -80,6 +86,7 @@ github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
 # github.com/pkg/errors v0.9.1
+## explicit
 github.com/pkg/errors
 # github.com/ramr/go-reaper v0.2.0
 github.com/ramr/go-reaper
@@ -119,11 +126,12 @@ github.com/ysmood/goob
 # github.com/ysmood/leakless v0.5.6
 github.com/ysmood/leakless
 github.com/ysmood/leakless/lib
-# golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
+# golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 golang.org/x/net/idna
 golang.org/x/net/webdav
 golang.org/x/net/webdav/internal/xml
-# golang.org/x/sys v0.0.0-20200828194041-157a740278f4
+# golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a
+## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.2
@@ -132,7 +140,8 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
-# golang.org/x/tools v0.0.0-20191108193012-7d206e10da11
+# golang.org/x/tools v0.0.0-20200423201157-2723c5de0d66
+## explicit
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/buildutil
 golang.org/x/tools/go/internal/cgo

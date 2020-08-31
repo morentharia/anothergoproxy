@@ -3,13 +3,11 @@ package main
 import (
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"regexp"
-	"sync"
 
 	"github.com/elazarl/goproxy"
 	"github.com/fatih/color"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,10 +29,11 @@ func NewProxy() (*Proxy, error) {
 
 	cacheHandlers, err := NewCacheHandlers()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	proxy.OnRequest().DoFunc(cacheHandlers.requestHandler)
 	proxy.OnResponse().DoFunc(cacheHandlers.responseHandler)
+	proxy.OnResponse().DoFunc(disableCSPHandler)
 
 	proxy.Verbose = options.Verbose
 	return &Proxy{proxy}, nil
@@ -45,67 +44,27 @@ var urlColor = color.New(color.FgYellow).SprintFunc()
 var respBodyColor = color.New(color.FgBlue).SprintFunc()
 
 type CacheHandlers struct {
-	cache          sync.Map
-	sessionStorage SessionStorage
+	cache          ReqRespCacheI
+	sessionStorage *SessionStorage
 }
 
 func NewCacheHandlers() (*CacheHandlers, error) {
-	var err error
-	if _, err = os.Stat(options.OutputPath); os.IsNotExist(err) {
-		err = os.Mkdir(options.OutputPath, 0700)
-		if err != nil {
-			logrus.WithError(err).Error("mkdir")
-			return nil, err
-		}
-	}
-	if _, err := os.Stat(filepath.Join(options.OutputPath, "data")); os.IsNotExist(err) {
-		err = os.Mkdir(filepath.Join(options.OutputPath, "data"), 0700)
-		if err != nil {
-			logrus.WithError(err).Error("mkdir")
-			return nil, err
-		}
+	cache, err := NewCacheFile()
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 	return &CacheHandlers{
-		sessionStorage: SessionStorage{
-			mux:     &sync.Mutex{},
-			storage: make(map[int64]*RequestDTO),
-			arr:     make([]int64, 0),
-		},
+		cache:          cache,
+		sessionStorage: NewSessionStorage(),
 	}, nil
-}
-
-type SessionStorage struct {
-	mux     *sync.Mutex
-	storage map[int64]*RequestDTO
-	arr     []int64
-}
-
-func (s *SessionStorage) Store(key int64, value *RequestDTO) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	s.arr = append(s.arr, key)
-	if len(s.arr) > 100 {
-		for _, k := range s.arr[:50] {
-			delete(s.storage, k)
-		}
-		s.arr = s.arr[50:]
-	}
-	s.storage[key] = value
-}
-func (s *SessionStorage) Load(key int64) (*RequestDTO, bool) {
-	s.mux.Lock()
-	value, ok := s.storage[key]
-	s.mux.Unlock()
-	return value, ok
 }
 
 func (c *CacheHandlers) requestHandler(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 	reqDTO := NewRequestDTO(req)
 	c.sessionStorage.Store(ctx.Session, reqDTO)
 
-	f := NewCacheFile(reqDTO)
-	if resp, err := f.Load(); err == nil {
-		logrus.Printf("[%d] --> %s %s body: %s", ctx.Session, req.Method, urlColor(req.URL), f.ResponseBodyFilename)
+	if resp, err := c.cache.Load(reqDTO); err == nil {
+		logrus.Printf("[%d] --> %s %s", ctx.Session, req.Method, urlColor(req.URL))
 		return req, resp.HttpResponse()
 	}
 
@@ -116,7 +75,7 @@ func (c *CacheHandlers) requestHandler(req *http.Request, ctx *goproxy.ProxyCtx)
 
 func (c *CacheHandlers) responseHandler(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 	logrus.Printf("[%d] <-- %d %s", ctx.Session, resp.StatusCode, urlColor(ctx.Req.URL))
-	//TODO: websocket support s!!
+	//TODO: websocket support !!
 	if resp.StatusCode == 101 {
 		return resp
 	}
@@ -140,7 +99,7 @@ func (c *CacheHandlers) responseHandler(resp *http.Response, ctx *goproxy.ProxyC
 		return resp
 	}
 
-	if err = NewCacheFile(reqDTO).Save(respDTO); err != nil {
+	if err = c.cache.Store(reqDTO, respDTO); err != nil {
 		logrus.WithError(err).Error("save file")
 		return nil
 	}

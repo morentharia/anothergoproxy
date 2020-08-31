@@ -24,7 +24,12 @@ func NewRequestDTO(req *http.Request) *RequestDTO {
 		logrus.WithError(err).Error("can't read body")
 		return &RequestDTO{req, []byte("")}
 	}
-	req.Body.Close()
+	err = req.Body.Close()
+	if err != nil {
+		//todo:
+		logrus.WithError(err).Error("req.Body.Close")
+		return nil
+	}
 	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	return &RequestDTO{req, body}
 }
