@@ -1,0 +1,16 @@
+info:
+  contact: {}
+  license: {}
+paths:
+  /config:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: answer
+          schema:
+            type: string
+swagger: "2.0"
