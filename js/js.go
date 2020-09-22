@@ -58,14 +58,17 @@ const Init = `(function () {
           // }
           switch (mutation.type) {
             case "childList":
-              s = [];
+              array = [];
               mutation.addedNodes.forEach((n) => {
                 if (n.innerHTML !== "") {
-                  s.push(n.innerHTML);
+                  array.push(n.innerHTML);
                 }
               });
-              if (s.length !== 0) {
-                ProxyLog("muatation.childList", s);
+              if (array.length !== 0) {
+                ProxyLog("muatation.childList", {
+                  href: document.location.href,
+                  childNodes: array,
+                });
               }
               break;
             case "attributes":
@@ -76,13 +79,14 @@ const Init = `(function () {
               //   newValue: mutation.target[mutation.attributeName] || "",
               //   // innerHTML: mutation.target.innerHTML,
               // });
-              break
+              break;
             default:
           }
         });
       });
 
       mutationObserver.observe(document.documentElement, {
+        href: document.location.href,
         attributes: true,
         characterData: true,
         childList: true,
@@ -92,35 +96,33 @@ const Init = `(function () {
       });
     });
 
-
     function logPostMessageEvents(event) {
       try {
-          ProxyLog("postMessage", {
-              "docLocationHref": document.location.href,
-              "origin": event.origin,
-              "source": event.source.location.href,
-              "data":   event.data,
-          });
-          // console.log({
-          //     "byHref": document.location.href,
-          //     "origin": event.origin,
-          //     "source": event.source.location.href,
-          //     "data":   event.data,
-          // });
+        ProxyLog("postMessage", {
+          href: document.location.href,
+          origin: event.origin,
+          source: event.source.location.href,
+          data: event.data,
+        });
+        // console.log({
+        //     "byHref": document.location.href,
+        //     "origin": event.origin,
+        //     "source": event.source.location.href,
+        //     "data":   event.data,
+        // });
 
         // console.log("Message received by: " + document.location.href, "\norigin: " + event.origin + " source: ", event.source, "\ndata:", event.data)
       } catch (error) {
         // If the source window is cross-origin, you can't log it here
-          ProxyLog("postMessage", {
-              "docLocationHref": document.location.href,
-              "origin": event.origin,
-              "source": event.source.location.href,
-              "data":   event.data,
-          });
+        ProxyLog("postMessage", {
+          docLocationHref: document.location.href,
+          origin: event.origin,
+          source: event.source.location.href,
+          data: event.data,
+        });
       }
     }
-    addEventListener("message", logPostMessageEvents)
-
+    addEventListener("message", logPostMessageEvents);
   }
 })();
 `

@@ -1,10 +1,13 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
 *.a
 *.so
 
+# Folders
 _obj
 _test
 
+# Architecture specific extensions/prefixes
 *.[568vq]
 [568vq].out
 
@@ -18,6 +21,3 @@ _testmain.go
 
 *.exe
 *.test
-*.prof
-
-coverage.out

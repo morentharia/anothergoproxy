@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -15,17 +14,6 @@ type CacheFile struct{}
 var _ ReqRespCacheI = &CacheFile{}
 
 func NewCacheFile() (*CacheFile, error) {
-	var err error
-	for _, pathName := range []string{options.OutputPath, options.CachePath(), options.PagePath()} {
-		if _, err = os.Stat(pathName); os.IsNotExist(err) {
-			err = os.Mkdir(pathName, 0700)
-			if err != nil {
-				// logrus.WithError(err).Errorf("mkdir(\"%s\")", pathName)
-				return nil, errors.Wrapf(err, "mkdir(\"%s\")", pathName)
-			}
-		}
-	}
-
 	return &CacheFile{}, nil
 }
 
