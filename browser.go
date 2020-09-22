@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
-	"github.com/k0kubun/pp"
 	"github.com/morentharia/anothergoproxy/js"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -33,58 +32,57 @@ func NewBrowser() (*Browser, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	b.pageURLMatch, err = regexp.Compile(options.PageMatch)
-	if err != nil {
+	if b.pageURLMatch, err = regexp.Compile(options.PageMatch); err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	for _, p := range b.MustPages() {
-		u, err := b.pageURL(p)
-		if err != nil {
-			return nil, errors.WithStack(err)
+	for _, p := range b.MatchedPages() {
+		if _, err := p.EvalOnNewDocument(js.Bypass); err != nil {
+			return nil, err
 		}
-		b.DefaultViewport(&proto.EmulationSetDeviceMetricsOverride{Width: 1800, Height: 1200})
-		if b.pageURLMatch.MatchString(u.String()) {
-			if _, err := p.EvalOnNewDocument(js.Bypass); err != nil {
-				return nil, err
-			}
-			if _, err := p.EvalOnNewDocument(js.Underscore); err != nil {
-				return nil, err
-			}
+		if _, err := p.EvalOnNewDocument(js.Underscore); err != nil {
+			return nil, err
+		}
 
-			initJS := strings.ReplaceAll(js.Init, "{{{ANOTHERPROXY_API_URL}}}", options.RestAddr)
-			if _, err := p.EvalOnNewDocument(initJS); err != nil {
-				return nil, err
-			}
-			if err := b.reloadPage(p, 2); err != nil {
-				return nil, err
-			}
-			pp.Println("--H-----------------------")
+		initJS := strings.ReplaceAll(js.Init, "{{{ANOTHERPROXY_API_URL}}}", options.RestAddr)
+		if _, err := p.EvalOnNewDocument(initJS); err != nil {
+			return nil, err
+		}
+		if err := b.reloadPage(p, 2); err != nil {
+			return nil, err
 		}
 	}
 	go func() {
-		ticker := time.NewTicker(10 * time.Second)
+		defer func() {
+			if err := recover(); err != nil {
+				logrus.WithField("panic", err).Error("Periodic page flush fail")
+			}
+		}()
 
+		ticker := time.NewTicker(10 * time.Second)
 		for {
 			select {
 			case <-ticker.C:
-				for _, p := range b.MustPages() {
-					u, err := b.pageURL(p)
-					if err != nil {
-						continue
-					}
-					if b.pageURLMatch.MatchString(u.String()) {
-						if err := b.StorePage(p); err != nil {
-							logrus.WithError(err).Error("store page")
-						}
+				for _, p := range b.MatchedPages() {
+					if err := b.StorePage(p); err != nil {
+						logrus.WithError(err).Error("store page")
 					}
 				}
 			}
-
 		}
 	}()
 
 	return b, nil
+}
+
+func (b *Browser) MatchedPages() []*rod.Page {
+	pageList := make([]*rod.Page, 0)
+	for _, p := range b.MustPages() {
+		if b.pageURLMatch.MatchString(p.MustInfo().URL) {
+			pageList = append(pageList, p)
+		}
+	}
+	return pageList
 }
 
 // TODO:remove me

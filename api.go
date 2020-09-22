@@ -146,9 +146,9 @@ func (a Api) logHandler(ctx *gin.Context) {
 		return
 	}
 	// logrus.WithField("data", req).Info(req.Type)
-	go func(req *Request) {
-		rotlog.WithField("data", req).Info(req.Type)
-	}(&req)
+	// go func(req *Request) {
+	rotlog.WithField("data", req).Info(req.Type)
+	// }(&req)
 
 	ctx.JSON(http.StatusOK, struct{}{})
 	return
