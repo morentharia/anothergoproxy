@@ -47,6 +47,9 @@ func (o Options) PagePath() string {
 func (o Options) LogsPath() string {
 	return filepath.Join(options.OutputPath, "logs")
 }
+func (o Options) LogFilename() string {
+	return path.Join(options.LogsPath(), "events.log")
+}
 
 var flags []cli.Flag
 
@@ -125,20 +128,18 @@ func main() {
 				}
 			}
 
-			// DEBUG TODO:
-			if true {
-				if browser, err = NewBrowser(); err != nil {
-					return err
-				}
+			if browser, err = NewBrowser(); err != nil {
+				return err
 			}
+
 			proxy, err = NewProxy()
 			if err != nil {
 				// logrus.Printf("%v", err)
 				logrus.WithError(err).Errorf("NewProxy")
 				return err
 			}
-			//TODO
 
+			//TODO
 			go http.ListenAndServe(options.ProxyAddr, proxy)
 
 			api, err := NewApi()
@@ -160,7 +161,7 @@ func main() {
 			rotlog = logrus.New()
 			rotlog.SetFormatter(&logrus.JSONFormatter{})
 			rotlog.SetOutput(&lumberjack.Logger{
-				Filename:   path.Join(options.LogsPath(), "events.log"),
+				Filename:   options.LogFilename(),
 				MaxSize:    1, // megabytes
 				MaxBackups: 20,
 				MaxAge:     28,   //days
