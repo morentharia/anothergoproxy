@@ -39,7 +39,6 @@ func NewBrowser() (*Browser, error) {
 	}
 
 	for _, p := range b.MustPages() {
-		// if strings.Contains(p.MustInfo().URL, "ya.ru") {
 		u, err := b.pageURL(p)
 		if err != nil {
 			return nil, errors.WithStack(err)
@@ -57,17 +56,33 @@ func NewBrowser() (*Browser, error) {
 			if _, err := p.EvalOnNewDocument(initJS); err != nil {
 				return nil, err
 			}
-			if err := b.reloadPage(p, 0); err != nil {
+			if err := b.reloadPage(p, 2); err != nil {
 				return nil, err
 			}
-			// p.MustEval(js.Init)
 			pp.Println("--H-----------------------")
 		}
-
-		// if err := b.reloadPage(p, 0); err != nil {
-		// 	return nil, err
-		// }
 	}
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+
+		for {
+			select {
+			case <-ticker.C:
+				for _, p := range b.MustPages() {
+					u, err := b.pageURL(p)
+					if err != nil {
+						continue
+					}
+					if b.pageURLMatch.MatchString(u.String()) {
+						if err := b.StorePage(p); err != nil {
+							logrus.WithError(err).Error("store page")
+						}
+					}
+				}
+			}
+
+		}
+	}()
 
 	return b, nil
 }

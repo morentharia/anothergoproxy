@@ -162,7 +162,7 @@ func main() {
 			rotlog.SetFormatter(&logrus.JSONFormatter{})
 			rotlog.SetOutput(&lumberjack.Logger{
 				Filename:   options.LogFilename(),
-				MaxSize:    1, // megabytes
+				MaxSize:    100, // megabytes
 				MaxBackups: 20,
 				MaxAge:     28,   //days
 				Compress:   true, // disabled by default

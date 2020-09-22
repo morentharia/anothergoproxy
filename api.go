@@ -136,15 +136,20 @@ func (a Api) infoPagesHandler(ctx *gin.Context) {
 // @Router /log [post]
 // @Success 200 {string} string "answer"
 func (a Api) logHandler(ctx *gin.Context) {
-	var req struct {
+	type Request struct {
 		Type   string
 		Params interface{}
 	}
+	var req Request
 	if err := ctx.BindJSON(&req); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	go rotlog.WithField("data", req).Info(req.Type)
-	ctx.JSON(http.StatusOK, req)
+	// logrus.WithField("data", req).Info(req.Type)
+	go func(req *Request) {
+		rotlog.WithField("data", req).Info(req.Type)
+	}(&req)
+
+	ctx.JSON(http.StatusOK, struct{}{})
 	return
 }

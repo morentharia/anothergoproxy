@@ -58,9 +58,9 @@ const Init = `(function () {
           // }
           switch (mutation.type) {
             case "childList":
-              array = [];
+              let array = [];
               mutation.addedNodes.forEach((n) => {
-                if (n.innerHTML !== "") {
+                if (!!n.innerHTML) {
                   array.push(n.innerHTML);
                 }
               });
